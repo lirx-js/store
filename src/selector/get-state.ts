@@ -16,6 +16,6 @@ export function getState<GState, GValue>(
 ): GState | GValue {
   return (selector === void 0)
     ? getStoreState(store)
-    : selectState(store, selector);
+    : selectState(store, selector as ISelector<GState, GValue>);
 }
 

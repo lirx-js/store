@@ -44,7 +44,7 @@ function mapState<GState, GValue>(
 ): IObservable<GValue>;
 ```
 
-[Here is the definition of an Observable](https://github.com/lifaon74/rx-js-light/blob/main/src/observable/type/observable.md)
+[Here is the definition of an Observable](https://github.com/lirx-js/core/blob/master/src/observable/type/observable.md)
 
 
 ##### Example

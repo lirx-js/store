@@ -4,5 +4,5 @@ export function immutableArraySort<GValue>(
   source: ImmutableArray<GValue>,
   compareFn?: (a: GValue, b: GValue) => number
 ): ImmutableArray<GValue> {
-  return source.slice().sort(compareFn);
+  return source.slice().sort(compareFn as any);
 }

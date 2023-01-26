@@ -1,16 +1,16 @@
-[![npm (scoped)](https://img.shields.io/npm/v/@lirx/core.svg)](https://www.npmjs.com/package/@lirx/core)
-![npm](https://img.shields.io/npm/dm/@lirx/core.svg)
-![NPM](https://img.shields.io/npm/l/@lirx/core.svg)
-![npm type definitions](https://img.shields.io/npm/types/@lirx/core.svg)
+[![npm (scoped)](https://img.shields.io/npm/v/@lirx/store.svg)](https://www.npmjs.com/package/@lirx/store)
+![npm](https://img.shields.io/npm/dm/@lirx/store.svg)
+![NPM](https://img.shields.io/npm/l/@lirx/store.svg)
+![npm type definitions](https://img.shields.io/npm/types/@lirx/store.svg)
 
 ## 🗜️ @lirx/store
 
 [comment]: <> (🗜️ 🗄)
 
-`@lirx/core` provides state management for creating maintainable, explicit applications through the use of
+`@lirx/store` provides state management for creating maintainable, explicit applications through the use of
 single state and actions in order to express state changes.
 
-`@lirx/core` is extremely light and fast as opposed to classical Store library like
+`@lirx/store` is extremely light and fast as opposed to classical Store library like
 [redux](https://redux.js.org/),
 [ngrx](https://ngrx.io/),
 [ngxs](https://www.ngxs.io/),
@@ -78,9 +78,9 @@ appendUser({ name: 'Bob' }); // outputs: 2
 ## 📦 Installation
 
 ```bash
-yarn add @lirx/core
+yarn add @lirx/store
 # or
-npm install @lirx/core --save
+npm install @lirx/store --save
 ```
 
 This library supports:
@@ -95,7 +95,7 @@ however, in a **browser** environment, you'll need to resolve external imports t
 [webpack](https://webpack.js.org/),
 etc...
 or directly using [skypack](https://www.skypack.dev/):
-[https://cdn.skypack.dev/@lirx/core](https://cdn.skypack.dev/@lirx/core)
+[https://cdn.skypack.dev/@lirx/store](https://cdn.skypack.dev/@lirx/store)
 
 ## 📕 Documentation
 
