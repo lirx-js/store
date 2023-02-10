@@ -1,6 +1,6 @@
 {
   "name": "@lirx/store",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Description",
   "repository": {
     "type": "git",
@@ -11,6 +11,6 @@
   "license": "MIT",
   "access": "public",
   "dependencies": {
-    "@lirx/core": "1.0.0"
+    "@lirx/core": "^1.2.0"
   }
 }
