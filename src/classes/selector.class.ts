@@ -1,7 +1,9 @@
-import { IMapFunction, IObservable, mapObservable } from '@lirx/core';
+import { IMapFunction, IObservable, mapDistinctObservable, mapObservable } from '@lirx/core';
+import { EQUAL_FUNCTION_STRICT_EQUAL, IDistinctEqualFunctionOptions } from '@lirx/utils';
+import { IEqualFunction } from '@lirx/utils/src/misc/equal-function/equal-function.type';
 import { mapDistinctArrayItemsObservable } from '../helpers/observables/map-distinct-array-items-observable';
-import { mapDistinctObservable } from '../helpers/observables/map-distinct-observable';
 import { Store } from './store.class';
+import { IReadStateFunction } from './types/read-state-function.type';
 
 export type ISelectFunction<GState, GValue> = IMapFunction<GState, GValue>;
 
@@ -19,28 +21,47 @@ export type InferMapArrayItemsMapFunction<GValue, GOut> = GValue extends readonl
   : { ERROR: "GValue is not an array of objects" }
   ;
 
+export interface ISelectorOptions<GState, GValue> extends IDistinctEqualFunctionOptions<GValue> {
+
+}
+
 export class Selector<GState, GValue> {
-  protected _store: Store<GState>;
-  protected _map: ISelectFunction<GState, GValue>;
+  readonly #store: Store<GState>;
+  readonly #map: ISelectFunction<GState, GValue>;
+  readonly #equal: IEqualFunction<GValue>;
+  readonly #read: IReadStateFunction<GValue>;
 
   constructor(
     store: Store<GState>,
     map: ISelectFunction<GState, GValue>,
+    {
+      equal = EQUAL_FUNCTION_STRICT_EQUAL,
+    }: ISelectorOptions<GState, GValue> = {},
   ) {
-    this._store = store;
-    this._map = map;
+    this.#store = store;
+    this.#map = map;
+    this.#equal = equal;
+    this.#read = (): GValue => {
+      return this.#map(this.#store.state);
+    };
   }
 
   get store(): Store<GState> {
-    return this._store;
+    return this.#store;
   }
 
-  get(): GValue {
-    return this._map(this._store.state);
+  get get(): IReadStateFunction<GValue> {
+    return this.#read;
   }
 
   get$(): IObservable<GValue> {
-    return mapDistinctObservable(this._store.state$, this._map);
+    return mapDistinctObservable(
+      this.#store.state$,
+      this.#map,
+      {
+        equal: this.#equal,
+      },
+    );
   }
 
   map$<GOut>(

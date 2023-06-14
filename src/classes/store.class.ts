@@ -1,9 +1,10 @@
 import { createMulticastReplayLastSource, IObservable, IObserver, mapObservable } from '@lirx/core';
 import { Action, IUpdateStateFunction } from './action.class';
-import { ISelectFunction, Selector } from './selector.class';
+import { ISelectFunction, ISelectorOptions, Selector } from './selector.class';
+import { IReadStateFunction } from './types/read-state-function.type';
 
 export interface IStoreInput<GState> {
-  readonly getValue: () => GState;
+  readonly getValue: IReadStateFunction<GState>;
   readonly emit: IObserver<GState>;
   readonly subscribe: IObservable<GState>;
 }
@@ -24,9 +25,9 @@ export class Store<GState> {
     return new Store<GState>(input);
   }
 
-  protected _getState: () => GState;
-  protected _$state: IObserver<GState>;
-  protected _state$: IObservable<GState>;
+  readonly #getState: IReadStateFunction<GState>;
+  readonly #$state: IObserver<GState>;
+  readonly #state$: IObservable<GState>;
 
   protected constructor(
     {
@@ -35,47 +36,54 @@ export class Store<GState> {
       subscribe,
     }: IStoreInput<GState>,
   ) {
-    this._getState = getValue;
-    this._$state = emit;
-    this._state$ = subscribe;
+    this.#getState = getValue;
+    this.#$state = emit;
+    this.#state$ = subscribe;
   }
 
+  get getState(): IReadStateFunction<GState> {
+    return this.#getState;
+  }
+
+  get state$(): IObservable<GState> {
+    return this.#state$;
+  }
+
+  get $state(): IObserver<GState> {
+    return this.#$state;
+  }
+
+
   get state(): GState {
-    return this._getState();
+    return this.#getState();
   }
 
   set state(
     value: GState,
   ) {
-    this._$state(value);
+    this.#$state(value);
   }
 
-  get state$(): IObservable<GState> {
-    return this._state$;
-  }
-
-  get $state(): IObserver<GState> {
-    return this._$state;
-  }
-
-  select<GValue>(
-    map: ISelectFunction<GState, GValue>,
-  ): GValue {
-    return map(this.state);
-  }
-
-  select$<GValue>(
-    map: ISelectFunction<GState, GValue>,
-  ): IObservable<GValue> {
-    return mapObservable(this.state$, map);
-  }
+  // select<GValue>(
+  //   map: ISelectFunction<GState, GValue>,
+  // ): GValue {
+  //   return map(this.state);
+  // }
+  //
+  // select$<GValue>(
+  //   map: ISelectFunction<GState, GValue>,
+  // ): IObservable<GValue> {
+  //   return mapObservable(this.state$, map);
+  // }
 
   createSelector<GValue>(
     map: ISelectFunction<GState, GValue>,
+    options?: ISelectorOptions<GState, GValue>,
   ): Selector<GState, GValue> {
     return new Selector<GState, GValue>(
       this,
       map,
+      options,
     );
   }
 

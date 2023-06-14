@@ -10,7 +10,15 @@
   "author": "Valentin Richard",
   "license": "MIT",
   "access": "public",
+  "scripts": {
+    "reinstall": "rm -rf ./node_modules && rm -f ./yarn.lock && yarn install"
+  },
   "dependencies": {
-    "@lirx/core": "^1.2.0"
+    "@lirx/core": "latest",
+    "@lirx/utils": "latest",
+    "@lirx/async-task": "latest"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.2"
   }
 }

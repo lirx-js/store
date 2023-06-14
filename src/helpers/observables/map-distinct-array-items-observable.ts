@@ -1,10 +1,10 @@
-import { IMapFunction, IObservable, IObserver, IUnsubscribe } from '@lirx/core';
+import { IMapFunction, IObservable, IObserver, IUnsubscribeOfObservable } from '@lirx/core';
 
 export function mapDistinctArrayItemsObservable<GIn extends object, GOut>(
   subscribe: IObservable<readonly GIn[]>,
   mapFunction: IMapFunction<GIn, GOut>,
 ): IObservable<readonly GOut[]> {
-  return (emit: IObserver<readonly GOut[]>): IUnsubscribe => {
+  return (emit: IObserver<readonly GOut[]>): IUnsubscribeOfObservable => {
     const cache = new WeakMap<GIn, GOut>();
 
     return subscribe((items: readonly GIn[]): void => {
