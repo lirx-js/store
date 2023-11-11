@@ -1,0 +1,27 @@
+import { Store } from '../store/store.class';
+import { AbstractDeferred } from './abstract-deferred.class';
+
+export class DeferredSelector<GState, GValue> extends AbstractDeferred<GState, Selector<GState, GValue>> {
+  readonly #map: ISelectFunction<GState, GValue>;
+  readonly #options: ISelectorOptions<GState, GValue> | undefined;
+
+  constructor(
+    map: ISelectFunction<GState, GValue>,
+    options?: ISelectorOptions<GState, GValue>,
+  ) {
+    super();
+    this.#map = map;
+    this.#options = options;
+  }
+
+  override create(
+    store: Store<GState>,
+  ): Selector<GState, GValue> {
+    return new Selector<GState, GValue>(
+      store,
+      this.#map,
+      this.#options,
+    );
+  }
+}
+

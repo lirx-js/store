@@ -1,0 +1,133 @@
+import { Store } from '../../store/store.class';
+import { IReadStateFunction } from '../../store/types/read-state-function.type';
+import { IWriteStateFunction } from '../../store/types/write-state-function.type';
+import { Abortable, AsyncTask, IAsyncTaskInput } from '@lirx/async-task';
+import { IGenericFunction, noop } from '@lirx/utils';
+
+/* TYPES */
+
+export interface IStoreManagerOptions {
+  readonly queue?: boolean; // (default: true)
+}
+
+export interface IGenericStoreManagerInvokeFunction {
+  (
+    abortable: Abortable,
+    ...args: any[]
+  ): AsyncTask<void>;
+}
+
+export type InferStoreManagerInvokeFunctionArguments<GInvokeFunction extends IGenericStoreManagerInvokeFunction> =
+  GInvokeFunction extends ((abortable: Abortable, ...args: infer GArguments) => AsyncTask<void>)
+    ? GArguments
+    : never;
+
+export interface IStoreManagerMutateFunctionOptions<GState> {
+  readonly read: IReadStateFunction<GState>;
+  readonly write: IWriteStateFunction<GState>;
+  readonly abortable: Abortable;
+}
+
+export interface IStoreManagerMutateFunction<GState, GInvokeFunction extends IGenericStoreManagerInvokeFunction> {
+  (
+    options: IStoreManagerMutateFunctionOptions<GState>,
+    ...args: InferStoreManagerInvokeFunctionArguments<GInvokeFunction>
+  ): IAsyncTaskInput<void>;
+}
+
+/* CONSTANTS */
+
+const QUEUE = new WeakMap<Store<any>, AsyncTask<void>>;
+
+/* CLASS */
+
+export class StoreManager<GState, GInvokeFunction extends IGenericStoreManagerInvokeFunction> {
+  // static defer<GState, GReduceFunction extends IGenericFunction>(
+  //   reduce: IStoreReducerReduceFunction<GState, GReduceFunction>,
+  //   options?: IStoreReducerOptions<ReturnType<GReduceFunction>> | undefined,
+  // ): IDeferredStoreReducer<GState, GReduceFunction> {
+  //   return (
+  //     store: ReadonlyStore<GState>,
+  //   ): StoreManager<GState, GReduceFunction> => {
+  //     return new StoreManager<GState, GReduceFunction>(
+  //       store,
+  //       reduce,
+  //       options,
+  //     );
+  //   };
+  // }
+
+  readonly #invoke: GInvokeFunction;
+
+  constructor(
+    store: Store<GState>,
+    mutate: IStoreManagerMutateFunction<GState, GInvokeFunction>,
+    {
+      queue = true,
+    }: IStoreManagerOptions | undefined = {},
+  ) {
+    const invoke = (
+      abortable: Abortable,
+      ...args: InferStoreManagerInvokeFunctionArguments<GInvokeFunction>
+    ): AsyncTask<void> => {
+      let running: boolean = true;
+
+      const wrapFunctionWithRunning = <GFunction extends IGenericFunction>(fnc: GFunction): GFunction => {
+        return (function(this: any, ...args: any[]): ReturnType<GFunction> {
+          if (running) {
+            return fnc.apply(this, args);
+          } else {
+            throw new Error(`AsyncAction.invoke is done.`);
+          }
+        }) as GFunction;
+      };
+
+      return AsyncTask.fromFactory((abortable: Abortable): IAsyncTaskInput<void> => {
+        return mutate({
+          read: wrapFunctionWithRunning(store.getState),
+          write: wrapFunctionWithRunning(store.$state),
+          abortable,
+        }, ...args);
+      }, abortable)
+        .finally((): void => {
+          running = false;
+        });
+    };
+
+    if (queue) {
+      this.#invoke = ((
+        abortable: Abortable,
+        ...args: InferStoreManagerInvokeFunctionArguments<GInvokeFunction>
+      ): AsyncTask<void> => {
+        let asyncTask: AsyncTask<void> | undefined = QUEUE.get(store);
+
+        if (asyncTask === void 0) {
+          asyncTask = invoke(abortable, ...args);
+        } else {
+          asyncTask = AsyncTask.switchAbortable(
+            asyncTask
+              .errored(noop),
+            abortable,
+          )
+            .successful((_, abortable: Abortable): AsyncTask<void> => {
+              return invoke(abortable, ...args);
+            });
+        }
+
+        QUEUE.set(
+          store,
+          asyncTask,
+        );
+
+        return asyncTask;
+      }) as GInvokeFunction;
+    } else {
+      this.#invoke = invoke as GInvokeFunction;
+    }
+  }
+
+  get invoke(): GInvokeFunction {
+    return this.#invoke;
+  }
+}
+

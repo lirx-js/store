@@ -1,0 +1,108 @@
+import { ReadonlyStore } from '../../store/readonly-store.class';
+import { mapDistinctObservable, IObservable } from '@lirx/core';
+import { EQUAL_FUNCTION_STRICT_EQUAL, IGenericFunction, IDistinctEqualFunctionOptions } from '@lirx/utils';
+import { IDeferredStoreView } from '../deferred-store-view.type';
+
+/* TYPES */
+
+export type IStoreReduceFunction<GState, GArguments extends readonly any[], GReturn> =
+  (state: GState, ...args: GArguments) => GReturn;
+
+export type IGenericStoreReduceFunction = IStoreReduceFunction<any, readonly any[], any>;
+
+export type IStoreReducerStore<GReduceFunction extends IGenericStoreReduceFunction> =
+  GReduceFunction extends IStoreReduceFunction<infer GState, readonly any[], any>
+    ? ReadonlyStore<GState>
+    : never;
+
+export type IStoreReducerObserveFunction<GReduceFunction extends IGenericStoreReduceFunction> =
+  GReduceFunction extends IStoreReduceFunction<any, infer GArguments, infer GReturn>
+    ? (...args: GArguments) => IObservable<GReturn>
+    : never;
+
+export type IStoreReducerInstantFunction<GReduceFunction extends IGenericStoreReduceFunction> =
+  GReduceFunction extends IStoreReduceFunction<any, infer GArguments, infer GReturn>
+    ? (...args: GArguments) => GReturn
+    : never;
+
+export type IStoreReducerOptions<GReduceFunction extends IGenericStoreReduceFunction> =
+  GReduceFunction extends IStoreReduceFunction<infer GState, readonly any[], any>
+    ? IDistinctEqualFunctionOptions<GState>
+    : never;
+
+export type IDeferredStoreReducer<GReduceFunction extends IGenericStoreReduceFunction> =
+  IDeferredStoreView<IStoreReducerStore<GReduceFunction>, StoreReducer<GReduceFunction>>;
+
+/* CLASS */
+
+export class StoreReducer<GReduceFunction extends IGenericStoreReduceFunction> {
+  static defer<GReduceFunction extends IGenericFunction>(
+    reduce: GReduceFunction,
+    options?: IStoreReducerOptions<GReduceFunction> | undefined,
+  ): IDeferredStoreReducer<GReduceFunction> {
+    return (
+      store: IStoreReducerStore<GReduceFunction>,
+    ): StoreReducer<GReduceFunction> => {
+      return new StoreReducer<GReduceFunction>(
+        store,
+        reduce,
+        options,
+      );
+    };
+  }
+
+  readonly #observe: IStoreReducerObserveFunction<GReduceFunction>;
+  readonly #instant: IStoreReducerInstantFunction<GReduceFunction>;
+
+  constructor(
+    store: IStoreReducerStore<GReduceFunction>,
+    reduce: GReduceFunction,
+    {
+      equal = EQUAL_FUNCTION_STRICT_EQUAL,
+    }: IStoreReducerOptions<GReduceFunction> | undefined = {} as IStoreReducerOptions<GReduceFunction>,
+  ) {
+    this.#observe = ((
+      ...args: any[]
+    ): IObservable<any> => {
+      return mapDistinctObservable(
+        store.state$,
+        (state: any): any => {
+          return reduce(
+            state,
+            ...args,
+          );
+        },
+        {
+          equal,
+        },
+      );
+    }) as IStoreReducerObserveFunction<GReduceFunction>;
+
+    this.#instant = ((
+      ...args: any[]
+    ): any => {
+      return reduce(
+        store.state,
+        ...args,
+      );
+    }) as IStoreReducerInstantFunction<GReduceFunction>;
+  }
+
+  get observe(): IStoreReducerObserveFunction<GReduceFunction> {
+    return this.#observe;
+  }
+
+  get instant(): IStoreReducerInstantFunction<GReduceFunction> {
+    return this.#instant;
+  }
+}
+
+// type IState = {a: string};
+// //
+// const reducer = new StoreReducer(Store.create<IState>({a: 'o'}), (state: IState, id: string) => {
+//   return state.a === id;
+// });
+//
+// const a = reducer.instant('p');
+// const a$ = reducer.observe('p');
+//

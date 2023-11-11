@@ -1,0 +1,69 @@
+import { IMapFunction, IObservable, mapDistinctObservable, mapObservable } from '@lirx/core';
+import { EQUAL_FUNCTION_STRICT_EQUAL, IDistinctEqualFunctionOptions } from '@lirx/utils';
+import { ReadonlyStore } from '../store/readonly-store.class';
+
+
+export type ISelectFunction<GState, GValue> = IMapFunction<GState, GValue>;
+
+// export type InferArrayItemValue<GValue> = GValue extends readonly (infer GItem)[]
+//   ? GItem extends object
+//     ? GItem
+//     : { ERROR: "GValue is not an array of objects" }
+//   : { ERROR: "GValue is not an array of objects" }
+//   ;
+
+export type InferMapArrayItemsMapFunction<GValue, GOut> = GValue extends readonly (infer GItem)[]
+  ? GItem extends object
+    ? IMapFunction<GItem, GOut>
+    : { ERROR: "GValue is not an array of objects" }
+  : { ERROR: "GValue is not an array of objects" }
+  ;
+
+export interface ISelectorOptions<GState, GValue> extends IDistinctEqualFunctionOptions<GValue> {
+
+}
+
+export class Selector<GState, GValue> extends ReadonlyStore<GState> {
+  readonly #store: ReadonlyStore<GState>;
+
+  constructor(
+    store: ReadonlyStore<GState>,
+    map: ISelectFunction<GState, GValue>,
+    {
+      equal = EQUAL_FUNCTION_STRICT_EQUAL,
+    }: ISelectorOptions<GState, GValue> | undefined = {},
+  ) {
+    super({
+      getValue: (): GValue => {
+        return map(store.state);
+      },
+      subscribe: mapDistinctObservable(
+        store.state$,
+        map,
+        {
+          equal,
+        },
+      )
+    });
+    this.#store = store;
+  }
+
+  get store(): ReadonlyStore<GState> {
+    return this.#store;
+  }
+
+  // map$<GOut>(
+  //   map: IMapFunction<GValue, GOut>,
+  // ): IObservable<GOut> {
+  //   return mapObservable<GValue, GOut>(this.get$, map);
+  // }
+  //
+  // mapArrayItems$<GOut>(
+  //   map: InferMapArrayItemsMapFunction<GValue, GOut>,
+  // ): IObservable<readonly GOut[]> {
+  //   return mapDistinctArrayItemsObservable<any, GOut>(
+  //     this.get$ as any,
+  //     map as any,
+  //   );
+  // }
+}

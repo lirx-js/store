@@ -1,6 +1,6 @@
 {
   "name": "@lirx/store",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "description": "Description",
   "repository": {
     "type": "git",
@@ -19,6 +19,6 @@
     "@lirx/async-task": "latest"
   },
   "devDependencies": {
-    "@types/jest": "^29.5.2"
+    "@types/jest": "^29.5.3"
   }
 }
